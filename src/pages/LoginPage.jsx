@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { authService } from '../services/api'
 import '../styles/styleLogin.css'
 
 function LoginPage() {
@@ -43,6 +44,7 @@ function LoginPage() {
   const [signupName, setSignupName] = useState('')
   const [signupEmail, setSignupEmail] = useState('')
   const [signupPwd, setSignupPwd] = useState('')
+  const [signupRole, setSignupRole] = useState('ALUNO')
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [signupNameErr, setSignupNameErr] = useState(false)
   const [signupEmailErr, setSignupEmailErr] = useState(false)
@@ -67,7 +69,7 @@ function LoginPage() {
   const strengthLabel = signupPwd.length > 0 ? labels[score] : labels[0]
 
   // Event Handlers
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault()
     let valid = true
 
@@ -86,16 +88,21 @@ function LoginPage() {
     if (!valid) return
 
     setIsLoggingIn(true)
-    setTimeout(() => {
+    try {
+      await authService.login(loginEmail, loginPwd)
       setIsLoggingIn(false)
       setLoginSuccess(true)
       setTimeout(() => {
         navigate('/admin/dashboard')
       }, 1200)
-    }, 1800)
+    } catch (err) {
+      setIsLoggingIn(false)
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'E-mail ou senha incorretos.'
+      triggerToast(errorMsg)
+    }
   }
 
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault()
     let valid = true
 
@@ -124,13 +131,18 @@ function LoginPage() {
     if (!valid) return
 
     setIsSigningUp(true)
-    setTimeout(() => {
+    try {
+      await authService.registro(signupName, signupEmail, signupPwd, signupRole)
       setIsSigningUp(false)
       setSignupSuccess(true)
       setTimeout(() => {
         navigate('/admin/dashboard')
       }, 1500)
-    }, 1800)
+    } catch (err) {
+      setIsSigningUp(false)
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Erro ao criar conta.'
+      triggerToast(errorMsg)
+    }
   }
 
   return (
@@ -412,7 +424,32 @@ function LoginPage() {
                   <div className={`pwd-bar ${score >= 3 ? strengthClass : ''}`}></div>
                   <div className={`pwd-bar ${score >= 4 ? strengthClass : ''}`}></div>
                 </div>
-                <p className="pwd-label">{strengthLabel}</p>
+                 <p className="pwd-label">{strengthLabel}</p>
+              </div>
+
+              <div className="field">
+                <label htmlFor="signup-role">Tipo de Conta</label>
+                <select 
+                  id="signup-role"
+                  value={signupRole}
+                  onChange={(e) => setSignupRole(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem 1rem',
+                    borderRadius: '8px',
+                    border: '1px solid var(--cream-dark)',
+                    background: 'var(--cream-light)',
+                    color: 'var(--ink)',
+                    fontSize: '0.95rem',
+                    outline: 'none',
+                    transition: 'border-color 0.25s, box-shadow 0.25s',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="ALUNO">Aluno</option>
+                  <option value="INSTRUTOR">Instrutor</option>
+                  <option value="ADMIN">Administrador</option>
+                </select>
               </div>
 
               <div className="field" style={{ marginBottom: '1.5rem' }}>
