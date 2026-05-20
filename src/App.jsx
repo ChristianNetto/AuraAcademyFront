@@ -6,6 +6,8 @@ import AdminLayout from './components/AdminLayout'
 import DashboardPage from './pages/admin/DashboardPage'
 import UsersPage from './pages/admin/UsersPage'
 import CoursesPage from './pages/admin/CoursesPage'
+import StudentDashboard from './pages/student/DashboardPage'
+import CoursePlayer from './pages/student/CoursePlayerPage'
 
 function App() {
   return (
@@ -14,6 +16,10 @@ function App() {
         {/* Rotas Públicas */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+
+        {/* Painel do Aluno */}
+        <Route path="/aluno/dashboard" element={<StudentDashboard />} />
+        <Route path="/aluno/curso/:courseId" element={<CoursePlayer />} />
 
         {/* Painel Administrativo */}
         <Route path="/admin" element={<AdminLayout />}>
@@ -31,3 +37,4 @@ function App() {
 }
 
 export default App
+
