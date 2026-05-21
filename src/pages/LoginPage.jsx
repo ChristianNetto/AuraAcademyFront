@@ -88,21 +88,8 @@ function LoginPage() {
 
     setIsLoggingIn(true)
     try {
-      let role = 'ALUNO'
-      try {
-        const data = await authService.login(loginEmail, loginPwd)
-        role = data.role || 'ALUNO'
-      } catch (err) {
-        console.warn("Backend indisponível. Simulando autenticação no frontend.")
-        // Fallback local robusto para testes sem backend
-        localStorage.setItem('token', 'mocked-jwt-token')
-        role = loginEmail.toLowerCase().includes('admin') ? 'ADMIN' : 'ALUNO'
-        localStorage.setItem('user', JSON.stringify({
-          email: loginEmail,
-          role: role
-        }))
-      }
-      
+      const data = await authService.login(loginEmail, loginPwd)
+      const role = data.role || 'ALUNO'
       setIsLoggingIn(false)
       setLoginSuccess(true)
       setTimeout(() => {
@@ -112,7 +99,7 @@ function LoginPage() {
       }, 1200)
     } catch (err) {
       setIsLoggingIn(false)
-      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'E-mail ou senha incorretos.'
+      const errorMsg = err.response?.data?.mensagem || err.response?.data?.message || 'E-mail ou senha incorretos.'
       triggerToast(errorMsg)
     }
   }
@@ -147,14 +134,7 @@ function LoginPage() {
 
     setIsSigningUp(true)
     try {
-      try {
-        await authService.registro(signupName, signupEmail, signupPwd, 'ALUNO')
-      } catch (err) {
-        console.warn("Backend indisponível. Simulando registro no frontend.")
-        localStorage.setItem('token', 'mocked-jwt-token')
-        localStorage.setItem('user', JSON.stringify({ email: signupEmail, role: 'ALUNO' }))
-      }
-      
+      await authService.registro(signupName, signupEmail, signupPwd, 'ALUNO')
       setIsSigningUp(false)
       setSignupSuccess(true)
       setTimeout(() => {
@@ -162,7 +142,7 @@ function LoginPage() {
       }, 1500)
     } catch (err) {
       setIsSigningUp(false)
-      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Erro ao criar conta.'
+      const errorMsg = err.response?.data?.mensagem || err.response?.data?.message || 'Erro ao criar conta.'
       triggerToast(errorMsg)
     }
   }
