@@ -179,6 +179,12 @@ export const alunoService = {
     return response.data
   },
 
+  // GET /api/aluno/matriculas — todos os cursos matriculados (em andamento + concluídos)
+  async getMatriculas() {
+    const response = await apiClient.get('/api/aluno/matriculas')
+    return response.data
+  },
+
   // GET /api/aluno/certificados
   async getCertificados() {
     const response = await apiClient.get('/api/aluno/certificados')

@@ -72,22 +72,22 @@ function DashboardPage() {
         })))
       }
 
-      // 2. Fetch Enrolled Courses (Student space)
+      // 2. Fetch Enrolled Courses (Student space) — GET /api/aluno/matriculas
       try {
-        const dashboard = await alunoService.getDashboard()
-        const enrolledList = dashboard.matriculas || dashboard
+        const enrolledList = await alunoService.getMatriculas()
         if (Array.isArray(enrolledList)) {
           setMyCourses(enrolledList.map(m => ({
-            id: m.curso.id,
-            matriculaId: m.id,
-            titulo: m.curso.titulo,
-            instrutor: m.curso.instrutorNome || 'Instrutor Aura',
-            categoria: m.curso.categoria || 'Geral',
+            id: m.cursoId,
+            matriculaId: m.matriculaId,
+            titulo: m.cursoTitulo,
+            instrutor: m.instrutorNome || 'Instrutor Aura',
+            categoria: m.categoria || 'Geral',
             progresso: Math.round(m.progresso || 0),
-            thumbnail: getThumbUrlOrFallback(m.curso.thumbUrl),
-            descricaoCurta: m.curso.descricao || 'Sem descrição cadastrada.',
-            cargaHoraria: m.curso.cargaHorariaMinutos ? Math.round(m.curso.cargaHorariaMinutos / 60) : 10,
-            modulos: m.curso.modulos || [],
+            thumbnail: getThumbUrlOrFallback(m.thumbUrl),
+            descricaoCurta: m.descricao || 'Sem descrição cadastrada.',
+            cargaHoraria: m.cargaHorariaMinutos ? Math.round(m.cargaHorariaMinutos / 60) : 10,
+            modulos: [],
+            concluido: m.concluido || false,
             isEnrolled: true
           })))
           setBackendConnected(true)
@@ -185,17 +185,18 @@ function DashboardPage() {
     try {
       const newMat = await matriculaService.matricular(selectedCourse.id)
       triggerToast(`Matrícula efetuada com sucesso no curso "${selectedCourse.titulo}"! 🎉`)
-      
-      // Update UI state
+
+      // newMat é um DashboardItemResponse com matriculaId, cursoId, etc.
       const enrolledCourse = {
         ...selectedCourse,
-        matriculaId: newMat.id,
+        matriculaId: newMat?.matriculaId,
         progresso: 0,
+        concluido: false,
         isEnrolled: true
       }
-      setMyCourses([...myCourses, enrolledCourse])
+      setMyCourses(prev => [...prev, enrolledCourse])
       setShowDetailsModal(false)
-      
+
       // Redirect straight to player
       setTimeout(() => {
         navigate(`/aluno/curso/${selectedCourse.id}`)
@@ -203,16 +204,17 @@ function DashboardPage() {
     } catch (err) {
       console.warn("Erro ao se matricular no backend, simulando matrícula local.")
       triggerToast(`Matriculado (Simulado - Backend desconectado)! 🎉`)
-      
+
       const enrolledCourseSim = {
         ...selectedCourse,
         matriculaId: 'mat_' + Date.now(),
         progresso: 0,
+        concluido: false,
         isEnrolled: true
       }
-      setMyCourses([...myCourses, enrolledCourseSim])
+      setMyCourses(prev => [...prev, enrolledCourseSim])
       setShowDetailsModal(false)
-      
+
       setTimeout(() => {
         navigate(`/aluno/curso/${selectedCourse.id}`)
       }, 1000)
