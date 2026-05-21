@@ -4,6 +4,14 @@ import { mockCourses } from '../../data/mockCourses'
 import { cursoService, alunoService, matriculaService } from '../../services/api'
 import '../../styles/styleStudent.css'
 
+function extractYouTubeId(url) {
+  if (!url) return null
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/))([\w-]{11})/
+  )
+  return match ? match[1] : null
+}
+
 function CoursePlayerPage() {
   const { courseId } = useParams()
   const navigate = useNavigate()
@@ -204,23 +212,28 @@ function CoursePlayerPage() {
           
           {/* Responsive Embedded Player */}
           <div className="video-wrapper">
-            {activeLesson?.videoId || activeLesson?.videoUrl ? (
-              <iframe 
-                src={activeLesson.videoUrl && activeLesson.videoUrl.includes('embed') 
-                  ? activeLesson.videoUrl 
-                  : `https://www.youtube.com/embed/${activeLesson.videoId || 'dQw4w9WgXcQ'}?autoplay=0&rel=0`
-                }
-                title={activeLesson.titulo}
-                style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px' }}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '1rem', color: 'var(--cream-dark)', background: '#222' }}>
-                <span style={{ fontSize: '3rem' }}>🎥</span>
-                <span style={{ fontSize: '0.85rem' }}>Aula teórica: conteúdo sem vídeo anexado</span>
-              </div>
-            )}
+            {(() => {
+              const ytId = extractYouTubeId(activeLesson?.videoUrl) || activeLesson?.videoId
+              const embedSrc = ytId
+                ? `https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0`
+                : activeLesson?.videoUrl || null
+
+              return embedSrc ? (
+                <iframe
+                  key={embedSrc}
+                  src={embedSrc}
+                  title={activeLesson?.titulo}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', borderRadius: '12px' }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', color: 'var(--cream-dark)', background: '#222' }}>
+                  <span style={{ fontSize: '3rem' }}>🎥</span>
+                  <span style={{ fontSize: '0.85rem' }}>Aula teórica: conteúdo sem vídeo anexado</span>
+                </div>
+              )
+            })()}
             <div className="video-watermark">AuraAcademy Premium</div>
           </div>
 

@@ -243,16 +243,17 @@
   line-height: 1.2;
   margin-bottom: 1rem;
   letter-spacing: -0.02em;
+  color: #ffffff;
 }
 
 .hero-subtitle {
-  color: var(--ink-muted);
+  color: rgba(255, 255, 255, 0.72);
   font-size: 1.05rem;
   line-height: 1.6;
 }
 
 .hero-subtitle strong {
-  color: var(--white);
+  color: #ffffff;
 }
 
 .hero-stats {
