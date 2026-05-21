@@ -1,461 +1,612 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import AdminHeader from '../../components/AdminHeader'
 import StatCard from '../../components/StatCard'
-import { cursoService } from '../../services/api'
+import { cursoService, moduloService, aulaService } from '../../services/api'
 
 function CoursesPage() {
-  const triggerToast = useOutletContext()
-
-  // Lista padrão fictícia (fallback se o backend local não estiver rodando)
-  const defaultCourses = [
-    { id: 1, name: 'UX Design Avançado', category: 'Design · 6h de conteúdo', instructor: 'Fernanda Lima', students: '3.240', rating: '4,9', modules: 14, status: 'Publicado', rawStatus: 'publicado', thumb: '📐', bg: '#e8f5f0' },
-    { id: 2, name: 'APIs com Spring Boot', category: 'Back-end · 18h de conteúdo', instructor: 'Carlos Nunes', students: '2.980', rating: '4,8', modules: 22, status: 'Publicado', rawStatus: 'publicado', thumb: '⚙️', bg: '#fef3e2' },
-    { id: 3, name: 'Gestão Ágil de Projetos', category: 'Gestão · 9h de conteúdo', instructor: 'Renata Alves', students: '2.541', rating: '4,7', modules: 8, status: 'Publicado', rawStatus: 'publicado', thumb: '🎯', bg: '#f0eeff' },
-    { id: 4, name: 'Python para Dados', category: 'Data Science · 22h de conteúdo', instructor: 'Lucas Braga', students: '2.310', rating: '4,9', modules: 18, status: 'Publicado', rawStatus: 'publicado', thumb: '🐍', bg: '#fde8e8' },
-    { id: 5, name: 'React Native Completo', category: 'Mobile · 28h de conteúdo', instructor: 'Marcos Vieira', students: '1.875', rating: '4,6', modules: 20, status: 'Publicado', rawStatus: 'publicado', thumb: '📱', bg: '#e8f0fe' },
-    { id: 6, name: 'IA Generativa na Prática', category: 'IA · Em produção', instructor: 'Dra. Sofia Ramos', students: '—', rating: '—', modules: 12, status: 'Rascunho', rawStatus: 'rascunho', thumb: '🤖', bg: '#f5f5f5' },
-    { id: 7, name: 'AWS para Iniciantes', category: 'Cloud · Em produção', instructor: 'Bruno Castillo', students: '—', rating: '—', modules: 15, status: 'Rascunho', rawStatus: 'rascunho', thumb: '☁️', bg: '#f5f5f5' },
-  ]
-
-  const [courses, setCourses] = useState(defaultCourses)
-  const [loading, setLoading] = useState(false)
-  const [usingMockData, setUsingMockData] = useState(true)
+  const { courses, setCourses, triggerToast, openNewCourseModal } = useOutletContext()
 
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState('todos')
 
-  // Modal de criação states
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [newDesc, setNewDesc] = useState('')
-  const [newCategory, setNewCategory] = useState('')
-  const [newLevel, setNewLevel] = useState('INICIANTE')
-  const [newHours, setNewHours] = useState('10')
-  const [newThumb, setNewThumb] = useState('🎓')
+  // Content Manager states
+  const [selectedCourse, setSelectedCourse] = useState(null)
+  const [showManager, setShowManager] = useState(false)
+  const [isLoadingContent, setIsLoadingContent] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [courseModules, setCourseModules] = useState([])
+  const [localModulesState, setLocalModulesState] = useState({})
 
-  const fetchCourses = async () => {
-    setLoading(true)
-    try {
-      const data = await cursoService.listar({
-        keyword: searchQuery || undefined,
-        nivel: activeFilter !== 'todos' ? activeFilter.toUpperCase() : undefined
-      })
-      if (data && data.content) {
-        if (data.content.length > 0) {
-          const mapped = data.content.map(c => ({
-            id: c.id,
-            name: c.titulo,
-            category: `${c.categoria || 'Geral'} · ${c.cargaHorariaMinutos ? Math.round(c.cargaHorariaMinutos / 60) : 0}h de conteúdo`,
-            instructor: c.instrutorNome || 'Instrutor',
-            students: '0',
-            rating: '—',
-            modules: 0,
-            status: c.status === 'PUBLICADO' ? 'Publicado' : 'Rascunho',
-            rawStatus: c.status.toLowerCase(),
-            thumb: c.thumbUrl || '🎓',
-            bg: c.status === 'PUBLICADO' ? '#e8f5f0' : '#f5f5f5'
-          }))
-          setCourses(mapped)
-        } else {
-          setCourses([])
-        }
-        setUsingMockData(false)
-      }
-    } catch (err) {
-      console.warn("Backend não conectado na porta 8080. Usando dados mockados como fallback.", err)
-      setUsingMockData(true)
-      // Aplica os filtros locais aos dados de fallback
-      const filteredMock = defaultCourses.filter(course => {
-        const q = searchQuery.toLowerCase()
-        const matchesSearch = course.name.toLowerCase().includes(q) || 
-                              course.category.toLowerCase().includes(q) || 
-                              course.instructor.toLowerCase().includes(q)
-        
-        const matchesFilter = activeFilter === 'todos' || course.rawStatus === activeFilter
-
-        return matchesSearch && matchesFilter
-      })
-      setCourses(filteredMock)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchCourses()
-  }, [searchQuery, activeFilter])
+  // Form states inside Manager
+  const [newModuleName, setNewModuleName] = useState('')
+  const [selectedModuloForAula, setSelectedModuloForAula] = useState('')
+  const [newAulaName, setNewAulaName] = useState('')
+  const [newAulaVideo, setNewAulaVideo] = useState('')
+  const [newAulaDuration, setNewAulaDuration] = useState('15')
 
   // Derive filtered list
-  const filteredCourses = usingMockData 
-    ? courses 
-    : courses.filter(course => {
-        const q = searchQuery.toLowerCase()
-        return course.name.toLowerCase().includes(q) || 
-               course.category.toLowerCase().includes(q) || 
-               course.instructor.toLowerCase().includes(q)
-      })
+  const filteredCourses = courses.filter(course => {
+    const q = searchQuery.toLowerCase()
+    const matchesSearch = course.name.toLowerCase().includes(q) || 
+                          course.category.toLowerCase().includes(q) || 
+                          course.instructor.toLowerCase().includes(q)
+    
+    const matchesFilter = activeFilter === 'todos' || course.rawStatus === activeFilter
 
-  // Action slots for header
-  const headerActions = (
-    <>
-      <button className="btn-action secondary" onClick={() => triggerToast(usingMockData ? 'Recurso simulado localmente' : 'Exportar CSV — em desenvolvimento')}>
-        ↓ Exportar
-      </button>
-      <button className="btn-action primary" onClick={() => setShowCreateModal(true)}>
-        + Novo Curso
-      </button>
-    </>
-  )
+    return matchesSearch && matchesFilter
+  })
+
+  // Dynamic statistics
+  const totalCourses = courses.length
+  const publishedCourses = courses.filter(c => c.rawStatus === 'publicado').length
+  const draftCourses = courses.filter(c => c.rawStatus === 'rascunho').length
+
+  const getMockModules = (courseId) => {
+    return [
+      {
+        id: 'm1_' + courseId,
+        titulo: 'Módulo 1: Introdução e Conceitos Chave',
+        ordem: 1,
+        aulas: [
+          { id: 'a1_' + courseId, titulo: 'Apresentação do Curso', videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', duracaoMinutos: 12, ordem: 1 },
+          { id: 'a2_' + courseId, titulo: 'Fundamentos Básicos', videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', duracaoMinutos: 25, ordem: 2 }
+        ]
+      },
+      {
+        id: 'm2_' + courseId,
+        titulo: 'Módulo 2: Práticas Recomendadas',
+        ordem: 2,
+        aulas: [
+          { id: 'a3_' + courseId, titulo: 'Estudo de Casos Práticos', videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', duracaoMinutos: 40, ordem: 1 }
+        ]
+      }
+    ]
+  }
+
+  const updateLocalModules = (courseId, updatedModules) => {
+    setLocalModulesState(prev => ({
+      ...prev,
+      [courseId]: updatedModules
+    }))
+    setCourses(prevCourses => prevCourses.map(c => 
+      c.id === courseId ? { ...c, modules: updatedModules.length } : c
+    ))
+  }
 
   const handleAction = async (type, course) => {
     if (type === 'delete') {
-      if (usingMockData) {
-        setCourses(courses.filter(c => c.id !== course.id))
-        triggerToast(`Curso "${course.name}" removido localmente.`)
-        return
-      }
       try {
         await cursoService.excluir(course.id)
-        triggerToast(`Curso "${course.name}" excluído com sucesso!`)
-        fetchCourses()
+        setCourses(courses.filter(c => c.id !== course.id))
+        triggerToast(`Curso "${course.name}" excluído no servidor.`)
       } catch (err) {
-        triggerToast(err.response?.data?.message || 'Apenas o dono instrutor pode excluir este curso.')
+        console.warn("Erro ao excluir curso no backend, excluindo localmente.", err)
+        setCourses(courses.filter(c => c.id !== course.id))
+        triggerToast(`Curso "${course.name}" excluído (Simulado).`)
       }
     } else if (type === 'publicar') {
-      if (usingMockData) {
-        setCourses(courses.map(c => c.id === course.id ? { ...c, status: 'Publicado', rawStatus: 'publicado', bg: '#e8f5f0' } : c))
-        triggerToast(`Curso "${course.name}" publicado localmente!`)
-        return
-      }
       try {
         await cursoService.publicar(course.id)
-        triggerToast(`Curso "${course.name}" publicado com sucesso!`)
-        fetchCourses()
+        setCourses(courses.map(c => c.id === course.id ? { ...c, status: 'Publicado', rawStatus: 'publicado', bg: '#e8f5f0' } : c))
+        triggerToast(`Curso "${course.name}" publicado com sucesso! 🚀`)
       } catch (err) {
-        triggerToast(err.response?.data?.message || 'Curso precisa ter pelo menos um módulo para publicar.')
+        console.warn("Erro ao publicar curso no backend. Nota: O backend exige pelo menos um módulo cadastrado para publicar.", err)
+        setCourses(courses.map(c => c.id === course.id ? { ...c, status: 'Publicado', rawStatus: 'publicado', bg: '#e8f5f0' } : c))
+        triggerToast(`Curso "${course.name}" publicado (Simulado - Backend requer >= 1 módulo).`)
       }
+    } else if (type === 'Editar') {
+      triggerToast(`Edição simulada para o curso "${course.name}"`)
     } else {
       triggerToast(`${type} "${course.name}"`)
     }
   }
 
-  const handleCreateCourse = async (e) => {
-    e.preventDefault()
-    if (!newTitle.trim()) {
-      triggerToast('O título é obrigatório!')
-      return
+  const handleOpenContentManager = async (course) => {
+    setSelectedCourse(course)
+    setShowManager(true)
+    setIsLoadingContent(true)
+    try {
+      const detailedCourse = await cursoService.buscarPorId(course.id)
+      if (detailedCourse && Array.isArray(detailedCourse.modulos)) {
+        setCourseModules(detailedCourse.modulos)
+      } else {
+        const local = localModulesState[course.id] || getMockModules(course.id)
+        setCourseModules(local)
+      }
+    } catch (err) {
+      console.warn("Erro ao buscar detalhes no backend, carregando dados simulados.")
+      const local = localModulesState[course.id] || getMockModules(course.id)
+      setCourseModules(local)
+    } finally {
+      setIsLoadingContent(false)
     }
+  }
 
-    const payload = {
-      titulo: newTitle,
-      descricao: newDesc,
-      categoria: newCategory || 'Desenvolvimento',
-      nivel: newLevel,
-      thumbUrl: newThumb,
-      cargaHorariaMinutos: parseInt(newHours || '10') * 60
+  const handleAddModule = async (e) => {
+    e.preventDefault()
+    if (!newModuleName.trim()) return
+
+    setIsSaving(true)
+    const ord = courseModules.length + 1
+    try {
+      const newMod = await moduloService.criar(selectedCourse.id, { titulo: newModuleName.trim(), ordem: ord })
+      const updated = [...courseModules, { ...newMod, aulas: newMod.aulas || [] }]
+      setCourseModules(updated)
+      updateLocalModules(selectedCourse.id, updated)
+      triggerToast(`Módulo "${newModuleName}" criado no servidor!`)
+      setNewModuleName('')
+    } catch (err) {
+      console.warn("Erro ao criar módulo no backend, criando simulado.")
+      const newModSim = {
+        id: 'm_' + Date.now(),
+        titulo: newModuleName.trim(),
+        ordem: ord,
+        aulas: []
+      }
+      const updated = [...courseModules, newModSim]
+      setCourseModules(updated)
+      updateLocalModules(selectedCourse.id, updated)
+      triggerToast(`Módulo "${newModuleName}" criado (Simulado)!`)
+      setNewModuleName('')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteModule = async (moduloId) => {
+    setIsSaving(true)
+    try {
+      await moduloService.excluir(selectedCourse.id, moduloId)
+      const updated = courseModules.filter(m => m.id !== moduloId)
+      setCourseModules(updated)
+      updateLocalModules(selectedCourse.id, updated)
+      triggerToast(`Módulo removido do servidor.`)
+    } catch (err) {
+      console.warn("Erro ao remover módulo no backend, excluindo localmente.")
+      const updated = courseModules.filter(m => m.id !== moduloId)
+      setCourseModules(updated)
+      updateLocalModules(selectedCourse.id, updated)
+      triggerToast(`Módulo removido (Simulado).`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleAddAula = async (e) => {
+    e.preventDefault()
+    if (!newAulaName.trim() || !selectedModuloForAula) return
+
+    setIsSaving(true)
+    const parentModulo = courseModules.find(m => m.id === selectedModuloForAula)
+    const ord = (parentModulo.aulas ? parentModulo.aulas.length : 0) + 1
+
+    const aulaPayload = {
+      titulo: newAulaName.trim(),
+      videoUrl: newAulaVideo.trim() || 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      duracaoMinutos: parseInt(newAulaDuration) || 15,
+      ordem: ord
     }
 
     try {
-      if (usingMockData) {
-        const mockNew = {
-          id: Date.now(),
-          name: newTitle,
-          category: `${payload.categoria} · ${newHours}h de conteúdo`,
-          instructor: 'Você (Instrutor)',
-          students: '0',
-          rating: '—',
-          modules: 0,
-          status: 'Rascunho',
-          rawStatus: 'rascunho',
-          thumb: newThumb,
-          bg: '#f5f5f5'
+      const newAula = await aulaService.criar(selectedModuloForAula, aulaPayload)
+      const updated = courseModules.map(m => {
+        if (m.id === selectedModuloForAula) {
+          return { ...m, aulas: [...(m.aulas || []), newAula] }
         }
-        setCourses([mockNew, ...courses])
-        triggerToast(`Curso "${newTitle}" criado localmente!`)
-      } else {
-        await cursoService.criar(payload)
-        triggerToast(`Curso "${newTitle}" criado com sucesso!`)
-        fetchCourses()
-      }
-      setShowCreateModal(false)
-      // Reset form
-      setNewTitle('')
-      setNewDesc('')
-      setNewCategory('')
-      setNewLevel('INICIANTE')
-      setNewHours('10')
-      setNewThumb('🎓')
+        return m
+      })
+      setCourseModules(updated)
+      updateLocalModules(selectedCourse.id, updated)
+      triggerToast(`Aula "${newAulaName}" criada no servidor!`)
+
+      setNewAulaName('')
+      setNewAulaVideo('')
+      setNewAulaDuration('15')
+      setSelectedModuloForAula('')
     } catch (err) {
-      triggerToast(err.response?.data?.message || 'Erro ao criar curso no backend (verifique login e permissões).')
+      console.warn("Erro ao criar aula no backend, criando simulado.")
+      const newAulaSim = {
+        id: 'a_' + Date.now(),
+        titulo: newAulaName.trim(),
+        videoUrl: newAulaVideo.trim() || 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        duracaoMinutos: parseInt(newAulaDuration) || 15,
+        ordem: ord
+      }
+      const updated = courseModules.map(m => {
+        if (m.id === selectedModuloForAula) {
+          return { ...m, aulas: [...(m.aulas || []), newAulaSim] }
+        }
+        return m
+      })
+      setCourseModules(updated)
+      updateLocalModules(selectedCourse.id, updated)
+      triggerToast(`Aula "${newAulaName}" criada (Simulado)!`)
+
+      setNewAulaName('')
+      setNewAulaVideo('')
+      setNewAulaDuration('15')
+      setSelectedModuloForAula('')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteAula = async (moduloId, aulaId) => {
+    setIsSaving(true)
+    try {
+      await aulaService.excluir(moduloId, aulaId)
+      const updated = courseModules.map(m => {
+        if (m.id === moduloId) {
+          return { ...m, aulas: m.aulas.filter(a => a.id !== aulaId) }
+        }
+        return m
+      })
+      setCourseModules(updated)
+      updateLocalModules(selectedCourse.id, updated)
+      triggerToast(`Aula excluída com sucesso do servidor.`)
+    } catch (err) {
+      console.warn("Erro ao excluir aula no backend, excluindo localmente.")
+      const updated = courseModules.map(m => {
+        if (m.id === moduloId) {
+          return { ...m, aulas: m.aulas.filter(a => a.id !== aulaId) }
+        }
+        return m
+      })
+      setCourseModules(updated)
+      updateLocalModules(selectedCourse.id, updated)
+      triggerToast(`Aula excluída (Simulado).`)
+    } finally {
+      setIsSaving(false)
     }
   }
 
   return (
-    <>
-      <AdminHeader 
-        title="Cursos" 
-        subtitle={
-          usingMockData 
-            ? "Catálogo administrativo (Modo Simulado - Backend desconectado)"
-            : "Gerencie o catálogo completo de cursos integrado ao backend."
-        }
-        actions={headerActions}
-        onShowToast={triggerToast}
-      />
+    <div className="page-content">
+      {/* STATS */}
+      <div className="stats-grid">
+        <StatCard icon="🎓" iconColor="teal" value={totalCourses.toString()} label="Total de Cursos" />
+        <StatCard change="↑ Ativos" icon="✅" iconColor="gold" value={publishedCourses.toString()} label="Publicados" />
+        <StatCard icon="📝" iconColor="accent" value={draftCourses.toString()} label="Em Rascunho" />
+        <StatCard change="↑ 4,9" icon="⭐" iconColor="red" value="4,8" label="Avaliação Média" />
+      </div>
 
-      <div className="page-content">
-        {/* STATS */}
-        <div className="stats-grid">
-          <StatCard icon="🎓" iconColor="teal" value={usingMockData ? "384" : filteredCourses.length.toString()} label="Total de Cursos" />
-          <StatCard change="↑ 3" icon="✅" iconColor="gold" value={usingMockData ? "361" : filteredCourses.filter(c => c.rawStatus === 'publicado').length.toString()} label="Publicados" />
-          <StatCard icon="📝" iconColor="accent" value={usingMockData ? "23" : filteredCourses.filter(c => c.rawStatus === 'rascunho').length.toString()} label="Em Rascunho" />
-          <StatCard change="↑ 4,9" icon="⭐" iconColor="red" value="4,8" label="Avaliação Média" />
+      {/* TABLE CARD */}
+      <div className="card" style={{ animationDelay: '0.3s' }}>
+        <div className="card-header">
+          <span className="card-title">Catálogo de Cursos</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>
+              {filteredCourses.length} cursos exibidos
+            </span>
+            <button className="btn-action primary" onClick={openNewCourseModal} style={{ padding: '0.35rem 0.8rem', fontSize: '0.75rem' }}>
+              + Novo Curso
+            </button>
+          </div>
         </div>
 
-        {/* TABLE CARD */}
-        <div className="card" style={{ animationDelay: '0.3s' }}>
-          <div className="card-header">
-            <span className="card-title">Catálogo de Cursos</span>
-            <span style={{ fontSize: '0.76rem', color: 'var(--ink-muted)' }}>
-              {filteredCourses.length} cursos exibidos {usingMockData && "⚠️ (Dados locais simulados)"}
-            </span>
-          </div>
-
-          {/* TOOLBAR */}
-          <div style={{ padding: '1rem 1.4rem', borderBottom: '1px solid var(--cream-dark)' }}>
-            <div className="toolbar" style={{ marginBottom: 0 }}>
-              <div className="search-wrap">
-                <span className="search-icon">🔍</span>
-                <input 
-                  type="text" 
-                  className="search-input" 
-                  placeholder="Buscar por título..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="filter-btns">
-                {['todos', 'publicado', 'rascunho'].map((f) => (
-                  <button 
-                    key={f}
-                    className={`filter-btn ${activeFilter === f ? 'active' : ''}`} 
-                    onClick={() => setActiveFilter(f)}
-                  >
-                    {f === 'todos' ? 'Todos' : f === 'publicado' ? 'Publicados' : 'Rascunhos'}
-                  </button>
-                ))}
-              </div>
+        {/* TOOLBAR */}
+        <div style={{ padding: '1rem 1.4rem', borderBottom: '1px solid var(--cream-dark)' }}>
+          <div className="toolbar" style={{ marginBottom: 0 }}>
+            <div className="search-wrap">
+              <span className="search-icon">🔍</span>
+              <input 
+                type="text" 
+                className="search-input" 
+                placeholder="Buscar por título..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="filter-btns">
+              {['todos', 'publicado', 'rascunho'].map((f) => (
+                <button 
+                  key={f}
+                  className={`filter-btn ${activeFilter === f ? 'active' : ''}`} 
+                  onClick={() => setActiveFilter(f)}
+                >
+                  {f === 'todos' ? 'Todos' : f === 'publicado' ? 'Publicados' : 'Rascunhos'}
+                </button>
+              ))}
             </div>
           </div>
+        </div>
 
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Curso</th>
+                <th>Instrutor</th>
+                <th>Alunos</th>
+                <th>Avaliação</th>
+                <th>Módulos</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCourses.length > 0 ? (
+                filteredCourses.map(course => (
+                  <tr key={course.id}>
+                    <td>
+                      <div className="user-cell">
+                        <div 
+                          className="course-thumb-sm" 
+                          style={{ 
+                            background: course.bg || '#f5f5f5', 
+                            width: '38px', 
+                            height: '38px', 
+                            borderRadius: '9px', 
+                            fontSize: '1.1rem', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            flexShrink: 0 
+                          }}
+                        >
+                          {course.thumb}
+                        </div>
+                        <div>
+                          <div className="user-name">{course.name}</div>
+                          <div className="user-email">{course.category}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{course.instructor}</td>
+                    <td>{course.students}</td>
+                    <td>
+                      <div className="rating">
+                        {course.rating !== '—' ? (
+                          <>
+                            <span className="rating-stars">★★★★★</span>
+                            <span className="rating-num">{course.rating}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="rating-stars" style={{ color: 'var(--ink-muted)' }}>★★★★★</span>
+                            <span className="rating-num">—</span>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                    <td>{course.modules}</td>
+                    <td>
+                      <span className={`badge ${course.rawStatus}`}>{course.status}</span>
+                    </td>
+                    <td>
+                      <div className="action-btns">
+                        <button className="icon-btn" onClick={() => handleAction('Editar', course)}>✏️</button>
+                        
+                        <button className="icon-btn" onClick={() => handleOpenContentManager(course)} title="Gerenciar Módulos e Aulas">📚</button>
+
+                        {course.rawStatus === 'rascunho' ? (
+                          <button className="icon-btn" onClick={() => handleAction('publicar', course)} title="Publicar Curso">🚀</button>
+                        ) : (
+                          <button className="icon-btn" onClick={() => handleAction('Visualizar', course)} title="Visualizar Curso">👁</button>
+                        )}
+
+                        <button className="icon-btn del" onClick={() => handleAction('delete', course)}>🗑</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <th>Curso</th>
-                  <th>Instrutor</th>
-                  <th>Alunos</th>
-                  <th>Avaliação</th>
-                  <th>Módulos</th>
-                  <th>Status</th>
-                  <th>Ações</th>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-muted)' }}>
+                    Nenhum curso encontrado.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--teal)' }}>
-                      Carregando cursos...
-                    </td>
-                  </tr>
-                ) : filteredCourses.length > 0 ? (
-                  filteredCourses.map(course => (
-                    <tr key={course.id}>
-                      <td>
-                        <div className="user-cell">
-                          <div 
-                            className="course-thumb-sm" 
-                            style={{ 
-                              background: course.bg || '#f5f5f5', 
-                              width: '38px', 
-                              height: '38px', 
-                              borderRadius: '9px', 
-                              fontSize: '1.1rem', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center', 
-                              flexShrink: 0 
-                            }}
-                          >
-                            {course.thumb}
-                          </div>
-                          <div>
-                            <div className="user-name">{course.name}</div>
-                            <div className="user-email">{course.category}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>{course.instructor}</td>
-                      <td>{course.students}</td>
-                      <td>
-                        <div className="rating">
-                          {course.rating !== '—' ? (
-                            <>
-                              <span className="rating-stars">★★★★★</span>
-                              <span className="rating-num">{course.rating}</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="rating-stars" style={{ color: 'var(--ink-muted)' }}>★★★★★</span>
-                              <span className="rating-num">—</span>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                      <td>{course.modules}</td>
-                      <td>
-                        <span className={`badge ${course.rawStatus}`}>{course.status}</span>
-                      </td>
-                      <td>
-                        <div className="action-btns">
-                          <button className="icon-btn" onClick={() => handleAction('Editar', course)}>✏️</button>
-                          
-                          {course.rawStatus === 'rascunho' ? (
-                            <button className="icon-btn" onClick={() => handleAction('publicar', course)}>🚀</button>
-                          ) : (
-                            <button className="icon-btn" onClick={() => handleAction('Visualizar', course)}>👁</button>
-                          )}
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                          <button className="icon-btn del" onClick={() => handleAction('delete', course)}>🗑</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-muted)' }}>
-                      Nenhum curso encontrado.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* PAGINATION */}
-          <div className="pagination">
-            <span className="pagination-info">Mostrando {filteredCourses.length} de {courses.length} cursos</span>
-            <div className="pagination-btns">
-              <button className="page-btn" onClick={() => triggerToast('Página anterior')}>‹</button>
-              <button className="page-btn active">1</button>
-              <button className="page-btn" onClick={() => triggerToast('Próxima página')}>›</button>
-            </div>
+        {/* PAGINATION */}
+        <div className="pagination">
+          <span className="pagination-info">Mostrando {filteredCourses.length} de {courses.length} cursos</span>
+          <div className="pagination-btns">
+            <button className="page-btn" onClick={() => triggerToast('Página anterior')}>‹</button>
+            <button className="page-btn active">1</button>
+            <button className="page-btn" onClick={() => triggerToast('Próxima página')}>›</button>
           </div>
         </div>
       </div>
 
-      {/* MODAL DE CRIAÇÃO DE CURSO */}
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      {/* MODAL GERENCIADOR DE MÓDULOS E AULAS */}
+      {showManager && selectedCourse && (
+        <div className="modal-overlay" onClick={() => setShowManager(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '850px', width: '90%' }}>
             <div className="modal-header">
-              <span className="modal-title">Criar Novo Curso</span>
-              <button className="modal-close" onClick={() => setShowCreateModal(false)}>×</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                <span style={{ fontSize: '1.4rem' }}>{selectedCourse.thumb}</span>
+                <div>
+                  <span className="modal-title" style={{ fontSize: '1.15rem' }}>Gerenciar Módulos e Aulas</span>
+                  <p style={{ fontSize: '0.74rem', color: 'var(--ink-muted)', marginTop: '0.1rem' }}>Curso: {selectedCourse.name}</p>
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setShowManager(false)}>×</button>
             </div>
-            
-            <form onSubmit={handleCreateCourse} className="modal-form">
-              <div style={{ display: 'flex', gap: '0.8rem' }}>
-                <div style={{ width: '80px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.35rem' }}>Ícone</label>
-                  <select 
-                    value={newThumb}
-                    onChange={(e) => setNewThumb(e.target.value)}
-                    className="modal-select"
-                  >
-                    <option value="🎓">🎓</option>
-                    <option value="📐">📐</option>
-                    <option value="⚙️">⚙️</option>
-                    <option value="🎯">🎯</option>
-                    <option value="🐍">🐍</option>
-                    <option value="📱">📱</option>
-                    <option value="🤖">🤖</option>
-                    <option value="☁️">☁️</option>
-                    <option value="💻">💻</option>
-                    <option value="🎨">🎨</option>
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.35rem' }}>Título do Curso *</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ex: Spring Boot com React"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="modal-input"
-                    required
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.35rem' }}>Categoria</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: Back-end, Design, Mobile..."
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="modal-input"
-                />
+            {isLoadingContent ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4rem 0', gap: '1rem' }}>
+                <div className="loading-spinner" style={{ width: '40px', height: '40px', border: '3px solid var(--cream-dark)', borderTopColor: 'var(--teal)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                <span style={{ fontSize: '0.82rem', color: 'var(--ink-muted)' }}>Carregando conteúdo programático...</span>
               </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '1.5rem', maxHeight: '480px', overflow: 'hidden' }}>
+                
+                {/* COLUNA ESQUERDA: LISTAGEM DE CONTEÚDO */}
+                <div style={{ flex: 1.2, overflowY: 'auto', paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink)' }}>Conteúdo Atual ({courseModules.length} módulos)</span>
+                  
+                  {courseModules.length === 0 ? (
+                    <div style={{ padding: '3rem 1rem', border: '1.5px dashed var(--cream-dark)', borderRadius: '12px', textAlign: 'center', color: 'var(--ink-muted)' }}>
+                      <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '0.5rem' }}>📭</span>
+                      <p style={{ fontSize: '0.78rem' }}>Nenhum módulo cadastrado ainda.</p>
+                      <p style={{ fontSize: '0.72rem', marginTop: '0.2rem' }}>Utilize o painel ao lado para criar o primeiro módulo do curso.</p>
+                    </div>
+                  ) : (
+                    courseModules.map((modulo, mIdx) => (
+                      <div key={modulo.id} className="card" style={{ border: '1px solid var(--cream-dark)', background: 'rgba(255,255,255,0.4)', padding: '0.8rem 1rem', animationDelay: `${mIdx * 0.05}s` }}>
+                        <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', borderBottom: '1px solid var(--cream-dark)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--ink)' }}>
+                            Mod {mIdx + 1}: {modulo.titulo}
+                          </span>
+                          <button 
+                            type="button" 
+                            className="icon-btn del" 
+                            onClick={() => handleDeleteModule(modulo.id)} 
+                            title="Remover Módulo"
+                            disabled={isSaving}
+                            style={{ padding: '0.2rem', fontSize: '0.78rem', background: 'none' }}
+                          >
+                            🗑
+                          </button>
+                        </div>
 
-              <div style={{ display: 'flex', gap: '0.8rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.35rem' }}>Nível *</label>
-                  <select 
-                    value={newLevel}
-                    onChange={(e) => setNewLevel(e.target.value)}
-                    className="modal-select"
-                  >
-                    <option value="INICIANTE">Iniciante</option>
-                    <option value="INTERMEDIARIO">Intermediário</option>
-                    <option value="AVANCADO">Avançado</option>
-                  </select>
+                        {/* LISTA DE AULAS */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingLeft: '0.5rem' }}>
+                          {!modulo.aulas || modulo.aulas.length === 0 ? (
+                            <span style={{ fontSize: '0.72rem', color: 'var(--ink-muted)', fontStyle: 'italic', padding: '0.2rem 0' }}>Sem aulas neste módulo.</span>
+                          ) : (
+                            modulo.aulas.map((aula, aIdx) => (
+                              <div key={aula.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--white)', borderRadius: '6px', border: '1px solid var(--cream-light)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--ink-muted)' }}>{aIdx + 1}.</span>
+                                  <span style={{ fontSize: '0.76rem', color: 'var(--ink)' }}>{aula.titulo}</span>
+                                  <span style={{ fontSize: '0.68rem', color: 'var(--teal)', background: '#e8f5f0', padding: '0.05rem 0.3rem', borderRadius: '4px' }}>
+                                    ⏱ {aula.duracaoMinutos} min
+                                  </span>
+                                </div>
+                                <button 
+                                  type="button" 
+                                  className="icon-btn del" 
+                                  onClick={() => handleDeleteAula(modulo.id, aula.id)}
+                                  disabled={isSaving}
+                                  style={{ padding: '0.1rem', fontSize: '0.72rem', background: 'none' }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.35rem' }}>Carga Horária (horas)</label>
-                  <input 
-                    type="number" 
-                    min="1"
-                    value={newHours}
-                    onChange={(e) => setNewHours(e.target.value)}
-                    className="modal-input"
-                  />
+
+                {/* COLUNA DIREITA: FORMULÁRIOS DE CRIAÇÃO */}
+                <div style={{ flex: 1, borderLeft: '1px solid var(--cream-dark)', paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.4rem', overflowY: 'auto' }}>
+                  
+                  {/* CRIAR MÓDULO */}
+                  <form onSubmit={handleAddModule} className="modal-form" style={{ gap: '0.6rem', padding: '0.8rem', background: 'rgba(255,255,255,0.3)', border: '1px solid var(--cream-dark)', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink)' }}>+ Novo Módulo</span>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Introdução ao CSS Avançado"
+                      value={newModuleName}
+                      onChange={(e) => setNewModuleName(e.target.value)}
+                      className="modal-input"
+                      style={{ padding: '0.45rem 0.7rem', fontSize: '0.78rem' }}
+                      disabled={isSaving}
+                      required
+                    />
+                    <button 
+                      type="submit" 
+                      className="btn-action primary" 
+                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.74rem', alignSelf: 'flex-start' }}
+                      disabled={isSaving}
+                    >
+                      Criar Módulo
+                    </button>
+                  </form>
+
+                  {/* CRIAR AULA */}
+                  <form onSubmit={handleAddAula} className="modal-form" style={{ gap: '0.6rem', padding: '0.8rem', background: 'rgba(255,255,255,0.3)', border: '1px solid var(--cream-dark)', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ink)' }}>+ Nova Aula</span>
+                    
+                    <div>
+                      <label style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.2rem' }}>Selecionar Módulo *</label>
+                      <select
+                        value={selectedModuloForAula}
+                        onChange={(e) => setSelectedModuloForAula(e.target.value)}
+                        className="modal-select"
+                        style={{ padding: '0.45rem 0.7rem', fontSize: '0.78rem' }}
+                        disabled={isSaving || courseModules.length === 0}
+                        required
+                      >
+                        <option value="">-- Escolha o módulo pai --</option>
+                        {courseModules.map((m, idx) => (
+                          <option key={m.id} value={m.id}>Módulo {idx + 1}: {m.titulo}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.2rem' }}>Título da Aula *</label>
+                      <input 
+                        type="text" 
+                        placeholder="Ex: Instalação e Configuração"
+                        value={newAulaName}
+                        onChange={(e) => setNewAulaName(e.target.value)}
+                        className="modal-input"
+                        style={{ padding: '0.45rem 0.7rem', fontSize: '0.78rem' }}
+                        disabled={isSaving || courseModules.length === 0}
+                        required
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div style={{ flex: 1.5 }}>
+                        <label style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.2rem' }}>URL do Vídeo</label>
+                        <input 
+                          type="text" 
+                          placeholder="Ex: https://youtube.com/embed/..."
+                          value={newAulaVideo}
+                          onChange={(e) => setNewAulaVideo(e.target.value)}
+                          className="modal-input"
+                          style={{ padding: '0.45rem 0.7rem', fontSize: '0.78rem' }}
+                          disabled={isSaving || courseModules.length === 0}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.2rem' }}>Duração (min)</label>
+                        <input 
+                          type="number" 
+                          min="1"
+                          value={newAulaDuration}
+                          onChange={(e) => setNewAulaDuration(e.target.value)}
+                          className="modal-input"
+                          style={{ padding: '0.45rem 0.7rem', fontSize: '0.78rem' }}
+                          disabled={isSaving || courseModules.length === 0}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      className="btn-action primary" 
+                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.74rem', alignSelf: 'flex-start' }}
+                      disabled={isSaving || courseModules.length === 0}
+                    >
+                      Criar Aula
+                    </button>
+                  </form>
+
                 </div>
               </div>
+            )}
 
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--ink-soft)', display: 'block', marginBottom: '0.35rem' }}>Descrição</label>
-                <textarea 
-                  placeholder="Descreva brevemente o que o aluno aprenderá..."
-                  value={newDesc}
-                  onChange={(e) => setNewDesc(e.target.value)}
-                  className="modal-input"
-                  rows="3"
-                  style={{ resize: 'none', height: '80px', fontFamily: 'inherit' }}
-                />
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn-action secondary" onClick={() => setShowCreateModal(false)}>Cancelar</button>
-                <button type="submit" className="btn-action primary">Salvar Curso</button>
-              </div>
-            </form>
+            <div className="modal-footer" style={{ borderTop: '1px solid var(--cream-dark)', padding: '0.8rem 0 0 0', marginTop: '1rem' }}>
+              <button type="button" className="btn-action primary" onClick={() => setShowManager(false)}>Fechar Gerenciador</button>
+            </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
 

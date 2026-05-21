@@ -624,3 +624,24 @@ html, body {
   from { transform: translateY(15px); opacity: 0; }
   to   { transform: translateY(0); opacity: 1; }
 }
+
+.role-select {
+  padding: 0.3rem 0.5rem;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.6);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.role-select:hover, .role-select:focus {
+  border-color: var(--teal);
+  background: var(--white);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}

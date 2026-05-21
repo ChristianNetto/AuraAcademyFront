@@ -1,7 +1,28 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { NavLink, Link } from 'react-router-dom'
+import { authService } from '../services/api'
 
-function Sidebar({ onShowToast }) {
+function Sidebar() {
+  const [currentUser, setCurrentUser] = useState({ 
+    nome: 'Administrador', 
+    email: 'admin@auraacademy.com', 
+    initials: 'AD' 
+  })
+
+  useEffect(() => {
+    const user = authService.getCurrentUser()
+    if (user) {
+      const email = user.email || 'admin@auraacademy.com'
+      const nome = email.split('@')[0].toUpperCase()
+      const initials = nome.substring(0, 2)
+      setCurrentUser({
+        nome: nome,
+        email: email,
+        initials: initials
+      })
+    }
+  }, [])
+
   return (
     <aside className="sidebar">
       <Link to="/" className="sidebar-logo">
@@ -24,33 +45,33 @@ function Sidebar({ onShowToast }) {
 
       <div className="sidebar-section">
         <div className="sidebar-section-label">Gestão</div>
-        <button className="sidebar-link" onClick={() => onShowToast('Em desenvolvimento')} style={{ border: 'none', background: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
+        <NavLink to="/admin/reports" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
           <span className="icon">📈</span> Relatórios
-        </button>
-        <button className="sidebar-link" onClick={() => onShowToast('Em desenvolvimento')} style={{ border: 'none', background: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
+        </NavLink>
+        <NavLink to="/admin/financial" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
           <span className="icon">💳</span> Financeiro
-        </button>
-        <button className="sidebar-link" onClick={() => onShowToast('Em desenvolvimento')} style={{ border: 'none', background: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
+        </NavLink>
+        <NavLink to="/admin/notifications" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
           <span className="icon">🔔</span> Notificações
-        </button>
+        </NavLink>
       </div>
 
       <div className="sidebar-section">
         <div className="sidebar-section-label">Sistema</div>
-        <button className="sidebar-link" onClick={() => onShowToast('Em desenvolvimento')} style={{ border: 'none', background: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}>
+        <NavLink to="/admin/settings" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
           <span className="icon">⚙️</span> Configurações
-        </button>
+        </NavLink>
       </div>
 
       <div className="sidebar-footer">
         <div className="sidebar-user">
-          <div className="sidebar-avatar">AD</div>
+          <div className="sidebar-avatar">{currentUser.initials}</div>
           <div className="sidebar-user-info">
-            <div className="sidebar-user-name">Administrador</div>
-            <div className="sidebar-user-role">admin@auraacademy.com</div>
+            <div className="sidebar-user-name">{currentUser.nome}</div>
+            <div className="sidebar-user-role">{currentUser.email}</div>
           </div>
         </div>
-        <Link to="/login" className="sidebar-link">
+        <Link to="/login" className="sidebar-link" onClick={() => authService.logout()}>
           <span className="icon">🚪</span> Sair
         </Link>
       </div>

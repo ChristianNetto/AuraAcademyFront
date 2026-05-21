@@ -1,0 +1,247 @@
+export const recentRegistrations = [
+  {
+    id: 1,
+    name: 'Carla Mendes',
+    email: 'carla.mendes@email.com',
+    initials: 'CM',
+    bg: 'var(--teal)',
+    plan: 'Premium',
+    status: 'Ativo',
+    date: '30 abr 2026',
+    role: 'Aluno',
+    courses: '7 cursos',
+    rawStatus: 'ativo',
+    rawPlan: 'premium'
+  },
+  {
+    id: 2,
+    name: 'Rafael Porto',
+    email: 'rafael.porto@email.com',
+    initials: 'RP',
+    bg: 'var(--gold)',
+    plan: 'Gratuito',
+    status: 'Ativo',
+    date: '29 abr 2026',
+    role: 'Aluno',
+    courses: '2 cursos',
+    rawStatus: 'ativo',
+    rawPlan: 'gratuito'
+  },
+  {
+    id: 3,
+    name: 'Lara Souza',
+    email: 'lara.souza@email.com',
+    initials: 'LS',
+    bg: 'var(--accent)',
+    plan: 'Premium',
+    status: 'Ativo',
+    date: '28 abr 2026',
+    role: 'Aluno',
+    courses: '12 cursos',
+    rawStatus: 'ativo',
+    rawPlan: 'premium'
+  },
+  {
+    id: 4,
+    name: 'João Mota',
+    email: 'joao.mota@email.com',
+    initials: 'JM',
+    bg: '#e67e22',
+    plan: 'Gratuito',
+    status: 'Inativo',
+    date: '27 abr 2026',
+    role: 'Aluno',
+    courses: '1 curso',
+    rawStatus: 'inativo',
+    rawPlan: 'gratuito'
+  },
+  {
+    id: 5,
+    name: 'Ana Silva',
+    email: 'ana.silva@email.com',
+    initials: 'AS',
+    bg: '#2980b9',
+    plan: 'Premium',
+    status: 'Ativo',
+    date: '26 abr 2026',
+    role: 'Aluno',
+    courses: '5 cursos',
+    rawStatus: 'ativo',
+    rawPlan: 'premium'
+  },
+  {
+    id: 6,
+    name: 'Marina Fernandes',
+    email: 'marina.f@email.com',
+    initials: 'MF',
+    bg: 'var(--danger)',
+    plan: 'Premium',
+    status: 'Ativo',
+    date: '01 jan 2026',
+    role: 'Admin',
+    courses: '—',
+    rawStatus: 'ativo',
+    rawPlan: 'premium'
+  },
+  {
+    id: 7,
+    name: 'Pedro Torres',
+    email: 'pedro.torres@email.com',
+    initials: 'PT',
+    bg: '#16a085',
+    plan: 'Premium',
+    status: 'Inativo',
+    date: '22 mai 2025',
+    role: 'Aluno',
+    courses: '3 cursos',
+    rawStatus: 'inativo',
+    rawPlan: 'premium'
+  },
+  {
+    id: 8,
+    name: 'Beatriz Castro',
+    email: 'bia.castro@email.com',
+    initials: 'BC',
+    bg: '#8e44ad',
+    plan: 'Gratuito',
+    status: 'Ativo',
+    date: '29 abr 2026',
+    role: 'Aluno',
+    courses: '1 curso',
+    rawStatus: 'ativo',
+    rawPlan: 'gratuito'
+  }
+];
+
+export const initialCourses = [
+  {
+    id: 1,
+    name: 'UX Design Avançado',
+    category: 'Design · 6h de conteúdo',
+    instructor: 'Fernanda Lima',
+    students: '3.240',
+    rating: '4,9',
+    modules: 14,
+    status: 'Publicado',
+    rawStatus: 'publicado',
+    thumb: '📐',
+    bg: '#e8f5f0'
+  },
+  {
+    id: 2,
+    name: 'APIs com Spring Boot',
+    category: 'Back-end · 18h de conteúdo',
+    instructor: 'Carlos Nunes',
+    students: '2.980',
+    rating: '4,8',
+    modules: 22,
+    status: 'Publicado',
+    rawStatus: 'publicado',
+    thumb: '⚙️',
+    bg: '#fef3e2'
+  },
+  {
+    id: 3,
+    name: 'Gestão Ágil de Projetos',
+    category: 'Gestão · 9h de conteúdo',
+    instructor: 'Renata Alves',
+    students: '2.541',
+    rating: '4,7',
+    modules: 8,
+    status: 'Publicado',
+    rawStatus: 'publicado',
+    thumb: '🎯',
+    bg: '#f0eeff'
+  },
+  {
+    id: 4,
+    name: 'Python para Dados',
+    category: 'Data Science · 22h de conteúdo',
+    instructor: 'Lucas Braga',
+    students: '2.310',
+    rating: '4,9',
+    modules: 18,
+    status: 'Publicado',
+    rawStatus: 'publicado',
+    thumb: '🐍',
+    bg: '#fde8e8'
+  },
+  {
+    id: 5,
+    name: 'React Native Completo',
+    category: 'Mobile · 28h de conteúdo',
+    instructor: 'Marcos Vieira',
+    students: '1.875',
+    rating: '4,6',
+    modules: 20,
+    status: 'Publicado',
+    rawStatus: 'publicado',
+    thumb: '📱',
+    bg: '#e8f0fe'
+  },
+  {
+    id: 6,
+    name: 'IA Generativa na Prática',
+    category: 'IA · Em produção',
+    instructor: 'Dra. Sofia Ramos',
+    students: '—',
+    rating: '—',
+    modules: 12,
+    status: 'Rascunho',
+    rawStatus: 'rascunho',
+    thumb: '🤖',
+    bg: '#f5f5f5'
+  },
+  {
+    id: 7,
+    name: 'AWS para Iniciantes',
+    category: 'Cloud · Em produção',
+    instructor: 'Bruno Castillo',
+    students: '—',
+    rating: '—',
+    modules: 15,
+    status: 'Rascunho',
+    rawStatus: 'rascunho',
+    thumb: '☁️',
+    bg: '#f5f5f5'
+  }
+];
+
+export const adminKpis = [
+  {
+    id: 'students',
+    label: 'Total de Alunos',
+    value: '12.483',
+    change: '↑ 8,2%',
+    icon: '👥',
+    iconColor: 'teal',
+    delay: '0.05s'
+  },
+  {
+    id: 'courses',
+    label: 'Cursos Ativos',
+    value: '384',
+    change: '↑ 3',
+    icon: '🎓',
+    iconColor: 'gold',
+    delay: '0.1s'
+  },
+  {
+    id: 'revenue',
+    label: 'Receita Mensal',
+    value: 'R$ 94,2k',
+    change: '↑ 12,5%',
+    icon: '💰',
+    iconColor: 'accent',
+    delay: '0.15s'
+  },
+  {
+    id: 'certificates',
+    label: 'Certificados Emitidos',
+    value: '38.710',
+    change: '↑ 210',
+    icon: '🏅',
+    iconColor: 'red',
+    delay: '0.2s'
+  }
+];
