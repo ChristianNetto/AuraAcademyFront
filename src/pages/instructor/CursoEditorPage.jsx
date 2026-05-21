@@ -198,7 +198,7 @@ export default function CursoEditorPage() {
 
   const loadCurso = async () => {
     try {
-      const data = await cursoService.buscarPorId(id)
+      const data = await cursoService.buscarMeuCurso(id)
       setCurso(data)
     } catch {
       triggerToast('Erro ao carregar curso.')

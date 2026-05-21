@@ -95,6 +95,12 @@ export const cursoService = {
     return response.data
   },
 
+  // GET /api/instrutor/cursos/{id} — detalhes completos incluindo RASCUNHO
+  async buscarMeuCurso(id) {
+    const response = await apiClient.get(`/api/instrutor/cursos/${id}`)
+    return response.data
+  },
+
   // GET /api/instrutor/cursos (apenas Instrutor/Admin)
   async listarMeusCursos(params = {}) {
     const response = await apiClient.get('/api/instrutor/cursos', { params })
