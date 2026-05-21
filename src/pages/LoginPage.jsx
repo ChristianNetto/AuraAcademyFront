@@ -44,7 +44,6 @@ function LoginPage() {
   const [signupName, setSignupName] = useState('')
   const [signupEmail, setSignupEmail] = useState('')
   const [signupPwd, setSignupPwd] = useState('')
-  const [signupRole, setSignupRole] = useState('ALUNO')
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [signupNameErr, setSignupNameErr] = useState(false)
   const [signupEmailErr, setSignupEmailErr] = useState(false)
@@ -107,11 +106,9 @@ function LoginPage() {
       setIsLoggingIn(false)
       setLoginSuccess(true)
       setTimeout(() => {
-        if (role === 'ALUNO') {
-          navigate('/aluno/dashboard')
-        } else {
-          navigate('/admin/dashboard')
-        }
+        if (role === 'ADMIN') navigate('/admin/dashboard')
+        else if (role === 'INSTRUTOR') navigate('/instrutor/dashboard')
+        else navigate('/aluno/dashboard')
       }, 1200)
     } catch (err) {
       setIsLoggingIn(false)
@@ -150,28 +147,18 @@ function LoginPage() {
 
     setIsSigningUp(true)
     try {
-      let role = signupRole
       try {
-        const data = await authService.registro(signupName, signupEmail, signupPwd, signupRole)
-        role = data.role || signupRole
+        await authService.registro(signupName, signupEmail, signupPwd, 'ALUNO')
       } catch (err) {
         console.warn("Backend indisponível. Simulando registro no frontend.")
-        // Fallback local robusto para testes sem backend
         localStorage.setItem('token', 'mocked-jwt-token')
-        localStorage.setItem('user', JSON.stringify({
-          email: signupEmail,
-          role: signupRole
-        }))
+        localStorage.setItem('user', JSON.stringify({ email: signupEmail, role: 'ALUNO' }))
       }
       
       setIsSigningUp(false)
       setSignupSuccess(true)
       setTimeout(() => {
-        if (role === 'ALUNO') {
-          navigate('/aluno/dashboard')
-        } else {
-          navigate('/admin/dashboard')
-        }
+        navigate('/aluno/dashboard')
       }, 1500)
     } catch (err) {
       setIsSigningUp(false)
@@ -460,31 +447,6 @@ function LoginPage() {
                   <div className={`pwd-bar ${score >= 4 ? strengthClass : ''}`}></div>
                 </div>
                  <p className="pwd-label">{strengthLabel}</p>
-              </div>
-
-              <div className="field">
-                <label htmlFor="signup-role">Tipo de Conta</label>
-                <select 
-                  id="signup-role"
-                  value={signupRole}
-                  onChange={(e) => setSignupRole(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.8rem 1rem',
-                    borderRadius: '8px',
-                    border: '1px solid var(--cream-dark)',
-                    background: 'var(--cream-light)',
-                    color: 'var(--ink)',
-                    fontSize: '0.95rem',
-                    outline: 'none',
-                    transition: 'border-color 0.25s, box-shadow 0.25s',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="ALUNO">Aluno</option>
-                  <option value="INSTRUTOR">Instrutor</option>
-                  <option value="ADMIN">Administrador</option>
-                </select>
               </div>
 
               <div className="field" style={{ marginBottom: '1.5rem' }}>
