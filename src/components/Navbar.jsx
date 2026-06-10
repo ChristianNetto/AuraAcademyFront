@@ -4,12 +4,13 @@ import { Link } from 'react-router-dom'
 function Navbar() {
   return (
     <nav>
-      <div className="logo">Aura<span>Academy</span></div>
+      <Link to="/" className="logo" style={{ textDecoration: 'none' }}>
+        Aura<span>Academy</span>
+      </Link>
       <ul className="nav-links">
         <li><Link to="/cursos">Cursos</Link></li>
-        <li><a href="#">Instrutores</a></li>
-        <li><a href="#">Planos</a></li>
-        <li><a href="#">Blog</a></li>
+        <li><Link to="/instrutores">Instrutores</Link></li>
+        <li><Link to="/planos">Planos</Link></li>
         <li>
           <Link to="/login" style={{ color: 'var(--teal)', fontWeight: 500 }}>
             Entrar

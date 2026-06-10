@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import PublicCoursesPage from './pages/PublicCoursesPage'
+import PublicInstructorsPage from './pages/PublicInstructorsPage'
+import PublicPlansPage from './pages/PublicPlansPage'
 import PrivateRoute from './components/PrivateRoute'
 import AdminLayout from './components/AdminLayout'
 import DashboardPage from './pages/admin/DashboardPage'
@@ -24,6 +26,8 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cursos" element={<PublicCoursesPage />} />
+        <Route path="/instrutores" element={<PublicInstructorsPage />} />
+        <Route path="/planos" element={<PublicPlansPage />} />
         <Route path="/validar-certificado/:hash" element={<CertificateValidatePage />} />
 
         {/* Painel do Aluno */}
