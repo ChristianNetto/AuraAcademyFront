@@ -57,7 +57,7 @@ export const recentRegistrations = [
   },
   {
     id: 5,
-    name: "Ana Silva",
+    name: "Ana Santos",
     email: "ana.silva@email.com",
     initials: "AS",
     bg: "#2980b9",
