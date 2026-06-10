@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
+import PublicCoursesPage from './pages/PublicCoursesPage'
 import PrivateRoute from './components/PrivateRoute'
 import AdminLayout from './components/AdminLayout'
 import DashboardPage from './pages/admin/DashboardPage'
@@ -22,6 +23,7 @@ function App() {
         {/* Rotas Públicas */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/cursos" element={<PublicCoursesPage />} />
         <Route path="/validar-certificado/:hash" element={<CertificateValidatePage />} />
 
         {/* Painel do Aluno */}

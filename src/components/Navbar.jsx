@@ -6,7 +6,7 @@ function Navbar() {
     <nav>
       <div className="logo">Aura<span>Academy</span></div>
       <ul className="nav-links">
-        <li><a href="#">Cursos</a></li>
+        <li><Link to="/cursos">Cursos</Link></li>
         <li><a href="#">Instrutores</a></li>
         <li><a href="#">Planos</a></li>
         <li><a href="#">Blog</a></li>
