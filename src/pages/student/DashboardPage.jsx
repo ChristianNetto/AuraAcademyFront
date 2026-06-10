@@ -105,13 +105,14 @@ function DashboardPage() {
       try {
         const certList = await alunoService.getCertificados()
         if (Array.isArray(certList)) {
+          // CertificadoResponse é plano: { cursoId, cursoTitulo, dataEmissao, urlValidacao, hashValidacao }
           setCertificates(certList.map(cert => ({
-            id: cert.id,
-            hash: cert.hash,
+            id: cert.hashValidacao || cert.cursoId,
+            hash: cert.hashValidacao,
             dataEmissao: cert.dataEmissao,
-            cursoTitulo: cert.curso.titulo,
-            cargaHoraria: Math.round(cert.curso.cargaHorariaMinutos / 60) || 12,
-            alunoNome: cert.aluno.nome
+            cursoTitulo: cert.cursoTitulo,
+            cargaHoraria: 12,
+            alunoNome: currentUser.nome
           })))
         }
       } catch (err) {
@@ -129,7 +130,7 @@ function DashboardPage() {
       }
     }
     loadData()
-  }, [currentUser.nome])
+  }, [])
 
   const getThumbUrlOrFallback = (thumb) => {
     if (thumb && thumb.startsWith('http')) return thumb

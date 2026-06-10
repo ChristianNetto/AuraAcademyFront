@@ -13,8 +13,11 @@ const apiClient = axios.create({
 // Interceptador de Requisição: Adiciona o token JWT do localStorage caso exista
 apiClient.interceptors.request.use(
   (config) => {
+    // Rotas públicas não devem carregar token — um token velho/expirado do
+    // localStorage faria o backend responder 403 num endpoint que é permitAll.
+    const isPublic = (config.url || '').includes('/public/')
     const token = localStorage.getItem('token')
-    if (token) {
+    if (token && !isPublic) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config

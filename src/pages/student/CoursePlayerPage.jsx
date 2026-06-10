@@ -85,18 +85,14 @@ function CoursePlayerPage() {
       let initialConcluded = localConcludedSaved ? JSON.parse(localConcludedSaved) : []
       
       try {
-        const dashboard = await alunoService.getDashboard()
-        const enrolledList = dashboard.matriculas || dashboard
+        // /api/aluno/matriculas retorna uma lista plana de DashboardItemResponse
+        // ({ matriculaId, cursoId, ... }). Comparação solta porque courseId vem
+        // da URL como string e cursoId é número.
+        const enrolledList = await alunoService.getMatriculas()
         if (Array.isArray(enrolledList)) {
-          const match = enrolledList.find(m => m.curso.id === courseId)
+          const match = enrolledList.find(m => String(m.cursoId) === String(courseId))
           if (match) {
-            setMatriculaId(match.id)
-            if (match.aulasConcluidas) {
-              const ids = match.aulasConcluidas.map(a => a.id)
-              if (ids.length > 0) {
-                initialConcluded = ids
-              }
-            }
+            setMatriculaId(match.matriculaId)
           }
         }
       } catch (e) {
@@ -160,24 +156,38 @@ function CoursePlayerPage() {
     const nextPercent = totalAulasCount > 0 ? Math.round((nextConcluded.length / totalAulasCount) * 100) : 0
     setProgressPercent(nextPercent)
 
-    // Trigger celebration at 100%
-    if (nextPercent === 100 && !isAlreadyConcluded) {
-      setShowCelebration(true)
-      // Generates a mock validation token to validate
-      const hex = 'da' + Math.floor(Math.random() * 10000000) + 'ea'
-      setCertificateHash(hex)
-      triggerToast('Excelente trabalho! Você concluiu 100% do curso! 🏆')
-    }
+    const justCompleted = nextPercent === 100 && !isAlreadyConcluded
 
     if (matriculaId) {
       try {
-        await matriculaService.concluirAula(matriculaId, aulaId)
+        const response = await matriculaService.concluirAula(matriculaId, aulaId)
         triggerToast(isAlreadyConcluded ? 'Aula marcada como pendente' : 'Aula marcada como concluída! ✓')
+
+        if (justCompleted) {
+          if (response?.urlCertificado) {
+            const hash = response.urlCertificado.split('/').pop()
+            setCertificateHash(hash)
+          } else {
+            setCertificateHash('da' + Math.floor(Math.random() * 10000000) + 'ea')
+          }
+          setShowCelebration(true)
+          triggerToast('Excelente trabalho! Você concluiu 100% do curso! 🏆')
+        }
       } catch (err) {
         console.warn("Erro ao atualizar conclusão no backend, mantido em cache local.")
+        if (justCompleted) {
+          setCertificateHash('da' + Math.floor(Math.random() * 10000000) + 'ea')
+          setShowCelebration(true)
+          triggerToast('Excelente trabalho! Você concluiu 100% do curso! 🏆')
+        }
       }
     } else {
       triggerToast(isAlreadyConcluded ? 'Aula marcada como pendente (Simulado)' : 'Aula concluída (Simulado)! ✓')
+      if (justCompleted) {
+        setCertificateHash('da' + Math.floor(Math.random() * 10000000) + 'ea')
+        setShowCelebration(true)
+        triggerToast('Excelente trabalho! Você concluiu 100% do curso! 🏆')
+      }
     }
   }
 

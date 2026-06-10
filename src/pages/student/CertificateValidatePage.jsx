@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { certificadoService } from '../../services/api'
 
@@ -8,34 +8,40 @@ function CertificateValidatePage() {
   const [certData, setCertData] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
 
+  // Garante que cada hash seja validado UMA única vez. Sobrevive ao double-invoke
+  // do React.StrictMode e ao Fast Refresh sem reiniciar o estado — assim o card,
+  // depois de exibido, nunca "pisca" de volta para o spinner ou para tela vazia.
+  const validatedHashRef = useRef(null)
+
   useEffect(() => {
+    if (!hash || validatedHashRef.current === hash) return
+    validatedHashRef.current = hash
+
     async function validateHash() {
       setIsValidating(true)
       setErrorMsg('')
+      console.log('[CertValidate] validando hash:', hash)
 
       try {
         const response = await certificadoService.validar(hash)
-        if (response) {
-          setCertData({
-            hash: response.hash || hash,
-            alunoNome: response.aluno?.nome || response.alunoNome || 'Christian Netto',
-            cursoTitulo: response.curso?.titulo || response.cursoTitulo || 'Spring Boot com React',
-            cargaHoraria: response.curso?.cargaHorariaMinutos ? Math.round(response.curso.cargaHorariaMinutos / 60) : 16,
-            dataEmissao: response.dataEmissao || new Date().toISOString(),
-            status: 'VÁLIDO',
-            metodo: 'Verificação Criptográfica Oficial AuraAcademy'
-          })
-        }
+        setCertData({
+          hash: response.hash || hash,
+          alunoNome: response.aluno?.nome || response.alunoNome || 'Christian Netto',
+          cursoTitulo: response.curso?.titulo || response.cursoTitulo || 'Spring Boot com React',
+          cargaHoraria: response.curso?.cargaHorariaMinutos ? Math.round(response.curso.cargaHorariaMinutos / 60) : 16,
+          dataEmissao: response.dataEmissao || new Date().toISOString(),
+          status: 'VÁLIDO',
+          metodo: 'Verificação Criptográfica Oficial AuraAcademy'
+        })
+        console.log('[CertValidate] certificado válido (backend)')
       } catch (err) {
-        console.warn("Backend offline ou hash não encontrado, aplicando validação simulada.")
-        
-        // Simulação inteligente de certificados para visualização off-line
-        if (hash && (hash.length > 5 || hash === 'gold-cert-hash-100')) {
+        console.warn("[CertValidate] backend offline/hash não encontrado, validação simulada.", err?.response?.status)
+        if (hash.length > 5 || hash === 'gold-cert-hash-100') {
           setCertData({
             hash: hash,
             alunoNome: 'Christian Netto',
-            cursoTitulo: hash.includes('da') 
-              ? 'APIs com Spring Boot e React Avançado' 
+            cursoTitulo: hash.includes('da')
+              ? 'APIs com Spring Boot e React Avançado'
               : 'UX/UI Design: Interfaces Premium de Alta Conversão',
             cargaHoraria: hash.includes('da') ? 22 : 18,
             dataEmissao: new Date().toISOString(),
@@ -121,7 +127,7 @@ function CertificateValidatePage() {
         </div>
       ) : errorMsg ? (
         /* CARD: ERRO / INVÁLIDO */
-        <div className="card" style={{
+        <div style={{
           maxWidth: '480px',
           width: '100%',
           padding: '2.5rem 2rem',
@@ -158,9 +164,9 @@ function CertificateValidatePage() {
             </Link>
           </div>
         </div>
-      ) : (
+      ) : certData ? (
         /* CARD: SUCESSO / VÁLIDO */
-        <div className="card" style={{
+        <div style={{
           maxWidth: '560px',
           width: '100%',
           padding: '3rem 2.5rem',
@@ -260,6 +266,21 @@ function CertificateValidatePage() {
               Voltar ao Espaço de Estudos
             </Link>
           </div>
+        </div>
+      ) : (
+        /* FALLBACK: nunca renderiza vazio — mantém o spinner até resolver */
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.2rem', zIndex: 1 }}>
+          <div className="loading-spinner" style={{
+            width: '45px',
+            height: '45px',
+            border: '3px solid rgba(255,255,255,0.1)',
+            borderTopColor: 'var(--teal, #14b8a6)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', letterSpacing: '1px' }}>
+            CARREGANDO CERTIFICADO...
+          </span>
         </div>
       )}
 
