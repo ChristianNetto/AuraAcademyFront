@@ -180,17 +180,24 @@ function AdminLayout() {
     let createdUser = null
 
     try {
-      // Registrar no backend
+      // Preserva o token do admin antes de chamar registro, pois authService.registro()
+      // sobrescreveria o localStorage com o token do novo usuário, deslogando o admin.
+      const adminToken = localStorage.getItem('token')
+      const adminUser  = localStorage.getItem('user')
+
       const data = await authService.registro(newUserName.trim(), newUserEmail.trim(), newUserPassword.trim())
-      // Após registrar, se o plano for Premium (ou seja, quer virar ADMIN ou INSTRUTOR), tenta alterar
-      // Por padrão Spring cria como ALUNO. Se o admin escolheu algo diferente:
+
+      // Restaura a sessão do admin imediatamente
+      if (adminToken) {
+        localStorage.setItem('token', adminToken)
+        localStorage.setItem('user', adminUser)
+      }
+
       let finalRole = 'ALUNO'
       if (newUserPlan === 'Premium') {
         finalRole = 'ADMIN'
       }
-      
-      // O backend retorna UsuarioResponse criado, mas pode estar em formato diferente.
-      // Vamos listar novamente para atualizar ou simular a inserção baseada na resposta.
+
       createdUser = {
         id: data.id || Date.now(),
         nome: newUserName.trim(),
@@ -199,7 +206,7 @@ function AdminLayout() {
         ativo: true,
         criadoEm: new Date().toISOString()
       }
-      
+
       // Tenta atualizar papel se não for ALUNO
       if (finalRole !== 'ALUNO' && data.id) {
         try {
